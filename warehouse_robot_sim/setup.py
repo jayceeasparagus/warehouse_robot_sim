@@ -1,6 +1,15 @@
+import os
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'warehouse_robot_sim'
+
+
+def package_files(directory):
+    files = glob(os.path.join(directory, '*'))
+    return [file for file in files if os.path.isfile(file)]
+
 
 setup(
     name=package_name,
@@ -10,13 +19,17 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', package_files('launch')),
+        ('share/' + package_name + '/worlds', package_files('worlds')),
+        ('share/' + package_name + '/maps', package_files('maps')),
+        ('share/' + package_name + '/config', package_files('config')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='jayce',
-    maintainer_email='jayce@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer_email='jayceeasparagus@gmail.com',
+    description='ROS 2 warehouse robot simulation with TurtleBot navigation, SLAM, Nav2, and task dispatching.',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',
