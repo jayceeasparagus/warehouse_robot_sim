@@ -37,6 +37,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'delivery_task_node = warehouse_robot_sim.delivery_task_node:main',
         ],
     },
 )
+
