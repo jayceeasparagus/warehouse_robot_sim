@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import rclpy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.executors import MultiThreadedExecutor
@@ -51,17 +51,29 @@ class MultiRobotDispatcherNode(Node):
         self.declare_parameter('job_interval_sec', 6.0)
         self.declare_parameter('max_jobs', 6)
         self.declare_parameter('pickup_wait_sec', 2.0)
+        self.declare_parameter('startup_wait_sec', 8.0)
         self.declare_parameter('seed', 0)
 
         robot_names = list(self.get_parameter('robots').value)
         self.job_interval_sec = float(self.get_parameter('job_interval_sec').value)
         self.max_jobs = int(self.get_parameter('max_jobs').value)
         self.pickup_wait_sec = float(self.get_parameter('pickup_wait_sec').value)
+        self.startup_wait_sec = float(self.get_parameter('startup_wait_sec').value)
         seed = int(self.get_parameter('seed').value)
         self.random = random.Random(seed if seed != 0 else None)
 
         self.robots: List[RobotWorker] = [
             RobotWorker(name, ActionClient(self, NavigateToPose, f'/{name}/navigate_to_pose'))
+            for name in robot_names
+        ]
+        self.localized_robots = set()
+        self.amcl_subscriptions = [
+            self.create_subscription(
+                PoseWithCovarianceStamped,
+                f'/{name}/amcl_pose',
+                lambda msg, robot_name=name: self.mark_robot_localized(robot_name),
+                10,
+            )
             for name in robot_names
         ]
         self.job_queue: List[DeliveryJob] = []
@@ -79,8 +91,10 @@ class MultiRobotDispatcherNode(Node):
 
         self.get_logger().info(
             f'Multi-robot dispatcher ready: robots={self.robot_names()}, '
-            f'job_interval={self.job_interval_sec:.1f}s, max_jobs={self.max_jobs}'
+            f'job_interval={self.job_interval_sec:.1f}s, max_jobs={self.max_jobs}. '
+            f'Waiting {self.startup_wait_sec:.1f}s for AMCL initial poses to settle.'
         )
+        self.sleep_with_spin(self.startup_wait_sec)
         self.generator_timer = self.create_timer(self.job_interval_sec, self.generate_job_timer)
         self.dispatch_timer = self.create_timer(0.5, self.dispatch_jobs)
 
@@ -101,7 +115,30 @@ class MultiRobotDispatcherNode(Node):
             if not robot.action_client.wait_for_server(timeout_sec=25.0):
                 self.get_logger().error(f'/{robot.name}/navigate_to_pose is not available.')
                 return False
+
+        for robot in self.robots:
+            if not self.wait_for_amcl_pose(robot.name):
+                return False
         return True
+
+    def mark_robot_localized(self, robot_name: str):
+        self.localized_robots.add(robot_name)
+
+    def wait_for_amcl_pose(self, robot_name: str, timeout_sec: float = 90.0) -> bool:
+        deadline = self.get_clock().now().nanoseconds + int(timeout_sec * 1_000_000_000)
+        self.get_logger().info(f'{robot_name}: waiting for /{robot_name}/amcl_pose...')
+
+        while rclpy.ok() and self.get_clock().now().nanoseconds < deadline:
+            if robot_name in self.localized_robots:
+                self.get_logger().info(f'{robot_name}: AMCL pose received; localization is ready.')
+                return True
+            self.sleep_with_spin(0.5)
+
+        self.get_logger().error(
+            f'{robot_name}: timed out waiting for /{robot_name}/amcl_pose. '
+            'Make sure initial poses are published after Nav2 is active.'
+        )
+        return False
 
     def robot_names(self) -> str:
         return ', '.join(robot.name for robot in self.robots)
@@ -222,6 +259,11 @@ class MultiRobotDispatcherNode(Node):
         robot.phase = 'idle'
         robot.goal_handle = None
 
+    def sleep_with_spin(self, seconds: float):
+        end_time = self.get_clock().now().nanoseconds + int(seconds * 1_000_000_000)
+        while rclpy.ok() and self.get_clock().now().nanoseconds < end_time:
+            rclpy.spin_once(self, timeout_sec=0.1)
+
     def make_pose(self, x: float, y: float, yaw: float) -> PoseStamped:
         pose = PoseStamped()
         pose.header.frame_id = 'map'
@@ -248,7 +290,8 @@ def main():
         success = True
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
     raise SystemExit(0 if success else 1)
 
 

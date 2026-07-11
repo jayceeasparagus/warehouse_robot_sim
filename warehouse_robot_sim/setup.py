@@ -41,6 +41,7 @@ setup(
             'delivery_task_node = warehouse_robot_sim.delivery_task_node:main',
             'job_dispatcher_node = warehouse_robot_sim.job_dispatcher_node:main',
             'multi_robot_dispatcher_node = warehouse_robot_sim.multi_robot_dispatcher_node:main',
+            'initial_pose_publisher_node = warehouse_robot_sim.initial_pose_publisher_node:main',
         ],
     },
 )

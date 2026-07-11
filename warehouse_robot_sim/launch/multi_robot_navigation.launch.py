@@ -2,9 +2,10 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def nav2_bringup(nav2_share, package_share, namespace, params_file):
@@ -34,4 +35,22 @@ def generate_launch_description():
         DeclareLaunchArgument('autostart', default_value='true'),
         nav2_bringup(nav2_share, package_share, 'robot1', 'nav2_params_robot1.yaml'),
         nav2_bringup(nav2_share, package_share, 'robot2', 'nav2_params_robot2.yaml'),
+        TimerAction(
+            period=20.0,
+            actions=[
+                Node(
+                    package='warehouse_robot_sim',
+                    executable='initial_pose_publisher_node',
+                    name='initial_pose_publisher_node',
+                    output='screen',
+                    parameters=[{
+                        'use_sim_time': True,
+                        'start_delay_sec': 0.0,
+                        'publish_count': 60,
+                        'publish_period_sec': 0.5,
+                        'require_subscribers': True,
+                    }],
+                ),
+            ],
+        ),
     ])

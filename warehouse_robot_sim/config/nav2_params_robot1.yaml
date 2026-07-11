@@ -38,6 +38,12 @@ amcl:
     z_short: 0.05
     scan_topic: /robot1/scan
 
+    set_initial_pose: true
+    initial_pose.x: -5.5
+    initial_pose.y: -1.0
+    initial_pose.z: 0.0
+    initial_pose.yaw: 0.0
+
 bt_navigator:
   ros__parameters:
     global_frame: map
