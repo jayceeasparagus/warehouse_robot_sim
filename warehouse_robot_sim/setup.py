@@ -23,6 +23,7 @@ setup(
         ('share/' + package_name + '/worlds', package_files('worlds')),
         ('share/' + package_name + '/maps', package_files('maps')),
         ('share/' + package_name + '/config', package_files('config')),
+        ('share/' + package_name + '/scripts', package_files('scripts')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -42,5 +43,6 @@ setup(
         ],
     },
 )
+
 
 
