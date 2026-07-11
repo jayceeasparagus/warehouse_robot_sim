@@ -46,7 +46,7 @@ def generate_launch_description():
                     parameters=[{
                         'use_sim_time': True,
                         'start_delay_sec': 0.0,
-                        'publish_count': 60,
+                        'publish_count': 15,
                         'publish_period_sec': 0.5,
                         'require_subscribers': True,
                     }],
