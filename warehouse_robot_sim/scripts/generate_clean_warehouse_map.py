@@ -11,7 +11,7 @@ from pathlib import Path
 RESOLUTION = 0.05
 ORIGIN_X = -8.0
 ORIGIN_Y = -5.0
-WIDTH_M = 16.0
+WIDTH_M = 20.0
 HEIGHT_M = 10.0
 WIDTH = int(WIDTH_M / RESOLUTION)
 HEIGHT = int(HEIGHT_M / RESOLUTION)
@@ -21,10 +21,10 @@ OCCUPIED = 0
 
 # name, center_x, center_y, size_x, size_y
 BOXES = [
-    ("north_wall", 0.0, 4.0, 14.0, 0.2),
-    ("south_wall", 0.0, -4.0, 14.0, 0.2),
+    ("north_wall", 1.0, 4.0, 18.0, 0.2),
+    ("south_wall", 1.0, -4.0, 18.0, 0.2),
     ("west_wall", -7.0, 0.0, 0.2, 8.0),
-    ("east_wall", 7.0, 0.0, 0.2, 8.0),
+    ("east_wall", 11.0, 0.0, 0.2, 8.0),
     ("shelf_A1", -4.0, 2.0, 1.5, 0.5),
     ("shelf_A2", 0.0, 2.0, 1.5, 0.5),
     ("shelf_A3", 4.0, 2.0, 1.5, 0.5),
