@@ -34,7 +34,7 @@ class DeliveryJob:
     job_id: int
     pickup: str
     dropoff: str
-    created_time_sec: float
+    created_time: float
     attempts: int = 0
 
     @property
@@ -51,9 +51,6 @@ class RobotWorker:
     phase: str = 'idle'
     goal_handle: object = None
     last_station: Optional[str] = None
-    completed_jobs: int = 0
-    failed_attempts: int = 0
-    distance_traveled_estimate: float = 0.0
 
 
 def yaw_to_quaternion(yaw: float):
@@ -67,7 +64,7 @@ def station_distance(a: str, b: str) -> float:
     return math.hypot(ax - bx, ay - by)
 
 
-def pose_distance_to_station(pose: StationPose, station: str) -> float:
+def pose_to_station_distance(pose: StationPose, station: str) -> float:
     px, py, _ = pose
     sx, sy, _ = WAYPOINTS[station]
     return math.hypot(px - sx, py - sy)
@@ -85,7 +82,6 @@ class MultiRobotDispatcherNode(Node):
         self.declare_parameter('aging_weight', 0.08)
         self.declare_parameter('deadhead_weight', 0.25)
         self.declare_parameter('retry_limit', 1)
-        self.declare_parameter('retry_delay_sec', 3.0)
         self.declare_parameter('seed', 0)
         self.declare_parameter('job_sequence', [])
 
@@ -98,106 +94,82 @@ class MultiRobotDispatcherNode(Node):
         self.aging_weight = float(self.get_parameter('aging_weight').value)
         self.deadhead_weight = float(self.get_parameter('deadhead_weight').value)
         self.retry_limit = int(self.get_parameter('retry_limit').value)
-        self.retry_delay_sec = float(self.get_parameter('retry_delay_sec').value)
+
         seed = int(self.get_parameter('seed').value)
         self.random = random.Random(seed if seed != 0 else None)
-        self.job_sequence = self.parse_job_sequence(
-            list(self.get_parameter('job_sequence').value)
-        )
+        self.job_sequence = self.parse_job_sequence(list(self.get_parameter('job_sequence').value))
 
         self.robots: List[RobotWorker] = [
-            RobotWorker(
-                name=name,
-                action_client=ActionClient(self, NavigateToPose, f'/{name}/navigate_to_pose'),
-                last_station=None,
-            )
+            RobotWorker(name, ActionClient(self, NavigateToPose, f'/{name}/navigate_to_pose'))
             for name in robot_names
         ]
-        initial_pose_qos = QoSProfile(
+
+        qos = QoSProfile(
             depth=10,
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE,
         )
         self.initial_pose_publishers = {
-            name: self.create_publisher(
-                PoseWithCovarianceStamped,
-                f'/{name}/initialpose',
-                initial_pose_qos,
-            )
+            name: self.create_publisher(PoseWithCovarianceStamped, f'/{name}/initialpose', qos)
             for name in robot_names
             if name in INITIAL_POSES
         }
+
         self.job_queue: List[DeliveryJob] = []
         self.next_job_id = 1
         self.next_sequence_index = 0
         self.generated_jobs = 0
         self.completed_jobs = 0
-        self.permanently_failed_jobs = 0
-        self.retry_attempts = 0
-        self.pending_retries = 0
+        self.failed_jobs = 0
+        self.retries = 0
 
         self.generator_timer = None
         self.dispatch_timer = None
-        self.status_timer = None
         self.last_assignment_time = None
 
     def run(self) -> bool:
-        if not self.wait_for_robot_servers():
+        if not self.wait_for_nav2():
             return False
 
         self.get_logger().info(
-            f'Scheduler dispatcher ready: robots={self.robot_names()}, '
-            f'policy=SJF+aging, job_interval={self.job_interval_sec:.1f}s, '
-            f'max_jobs={self.max_jobs}, aging_weight={self.aging_weight:.3f}, '
-            f'deadhead_weight={self.deadhead_weight:.3f}, retry_limit={self.retry_limit}, '
-            f'job_sequence={self.format_job_sequence()}. '
-            f'Waiting {self.startup_wait_sec:.1f}s for AMCL poses to settle.'
+            f'Dispatcher ready for {self.robot_names()}. '
+            f'Policy: shortest job first + aging. max_jobs={self.max_jobs}'
         )
         self.sleep_with_spin(self.startup_wait_sec)
-        self.generator_timer = self.create_timer(self.job_interval_sec, self.generate_job_timer)
-        self.dispatch_timer = self.create_timer(0.5, self.dispatch_jobs)
-        self.status_timer = self.create_timer(5.0, self.log_scheduler_snapshot)
 
-        self.generate_job_timer()
+        self.generator_timer = self.create_timer(self.job_interval_sec, self.generate_job)
+        self.dispatch_timer = self.create_timer(0.5, self.dispatch_jobs)
+        self.generate_job()
 
         while rclpy.ok() and not self.is_done():
             rclpy.spin_once(self, timeout_sec=0.2)
 
-        self.log_scheduler_snapshot()
         self.get_logger().info(
-            f'Dispatcher finished. Generated={self.generated_jobs}, '
-            f'Completed={self.completed_jobs}, PermanentFailures={self.permanently_failed_jobs}, '
-            f'Retries={self.retry_attempts}'
+            f'Done. generated={self.generated_jobs}, completed={self.completed_jobs}, '
+            f'failed={self.failed_jobs}, retries={self.retries}'
         )
-        return self.permanently_failed_jobs == 0
+        return self.failed_jobs == 0
 
-    def wait_for_robot_servers(self) -> bool:
+    def wait_for_nav2(self) -> bool:
         for robot in self.robots:
-            self.get_logger().info(f'Waiting for /{robot.name}/navigate_to_pose action server...')
+            topic = f'/{robot.name}/navigate_to_pose'
+            self.get_logger().info(f'Waiting for {topic}...')
             if not robot.action_client.wait_for_server(timeout_sec=35.0):
-                self.get_logger().error(f'/{robot.name}/navigate_to_pose is not available.')
+                self.get_logger().error(f'{topic} is not available')
                 return False
 
-        self.publish_initial_poses_for_amcl()
-        self.get_logger().info(
-            'Dispatcher will let each namespaced Nav2 stack validate localization '
-            'when goals are submitted.'
-        )
+        self.publish_initial_poses()
         return True
 
-    def publish_initial_poses_for_amcl(self, count: int = 6):
-        if not self.initial_pose_publishers:
-            return
-
-        self.get_logger().info('Publishing initial poses from dispatcher to wake AMCL...')
+    def publish_initial_poses(self, count: int = 6):
         for attempt in range(1, count + 1):
             for robot_name, publisher in self.initial_pose_publishers.items():
                 pose = INITIAL_POSES[robot_name]
                 publisher.publish(self.make_initial_pose(*pose))
                 x, y, yaw = pose
                 self.get_logger().info(
-                    f'Published dispatcher initial pose {attempt}/{count} for '
-                    f'{robot_name}: x={x:.2f}, y={y:.2f}, yaw={yaw:.2f}'
+                    f'Initial pose {attempt}/{count} for {robot_name}: '
+                    f'x={x:.2f}, y={y:.2f}, yaw={yaw:.2f}'
                 )
             self.sleep_with_spin(0.5)
 
@@ -223,41 +195,30 @@ class MultiRobotDispatcherNode(Node):
         return ', '.join(robot.name for robot in self.robots)
 
     def is_done(self) -> bool:
-        all_jobs_generated = self.generated_jobs >= self.max_jobs
-        all_robots_idle = all(not robot.busy for robot in self.robots)
-        return all_jobs_generated and not self.job_queue and all_robots_idle and self.pending_retries == 0
+        generated_all_jobs = self.generated_jobs >= self.max_jobs
+        robots_are_idle = all(not robot.busy for robot in self.robots)
+        return generated_all_jobs and not self.job_queue and robots_are_idle
 
-    def parse_job_sequence(self, sequence_param) -> List[Tuple[str, str]]:
-        sequence = []
-        for item in sequence_param:
-            if ':' not in item:
-                raise ValueError(f'Invalid job_sequence item {item!r}; expected PICKUP:DROPOFF')
+    def parse_job_sequence(self, items) -> List[Tuple[str, str]]:
+        jobs = []
+        for item in items:
             pickup, dropoff = [part.strip().upper() for part in item.split(':', 1)]
-            if pickup not in WAYPOINTS or dropoff not in WAYPOINTS:
-                valid = ', '.join(sorted(WAYPOINTS))
-                raise ValueError(f'Invalid job_sequence item {item!r}; valid stations: {valid}')
-            if pickup == dropoff:
-                raise ValueError(f'Invalid job_sequence item {item!r}; pickup and dropoff must differ')
-            sequence.append((pickup, dropoff))
-        return sequence
-
-    def format_job_sequence(self) -> str:
-        if not self.job_sequence:
-            return 'random'
-        return ', '.join(f'{pickup}:{dropoff}' for pickup, dropoff in self.job_sequence)
+            if pickup in WAYPOINTS and dropoff in WAYPOINTS and pickup != dropoff:
+                jobs.append((pickup, dropoff))
+        return jobs
 
     def now_sec(self) -> float:
         return self.get_clock().now().nanoseconds / 1_000_000_000.0
 
-    def generate_job_timer(self):
+    def generate_job(self):
         if self.generated_jobs >= self.max_jobs:
-            if self.generator_timer is not None:
+            if self.generator_timer:
                 self.generator_timer.cancel()
             return
 
         if self.job_sequence:
             if self.next_sequence_index >= len(self.job_sequence):
-                if self.generator_timer is not None:
+                if self.generator_timer:
                     self.generator_timer.cancel()
                 return
             pickup, dropoff = self.job_sequence[self.next_sequence_index]
@@ -269,73 +230,57 @@ class MultiRobotDispatcherNode(Node):
         self.next_job_id += 1
         self.generated_jobs += 1
         self.job_queue.append(job)
-
-        self.get_logger().info(
-            f'Queued job {job.job_id}: {job.route}; '
-            f'base_distance={self.job_service_distance(job):.2f}, queue_size={len(self.job_queue)}'
-        )
+        self.get_logger().info(f'Queued job {job.job_id}: {job.route}')
 
     def dispatch_jobs(self):
         for robot in self.available_robots():
-            if not self.job_queue:
-                return
-            if not self.assignment_window_ready():
+            if not self.job_queue or not self.assignment_ready():
                 return
 
-            job, score = self.choose_job_for_robot(robot)
+            job, score = self.choose_job(robot)
             self.job_queue.remove(job)
             self.last_assignment_time = self.get_clock().now()
             robot.busy = True
             robot.job = job
             robot.phase = 'pickup'
             job.attempts += 1
+
             self.get_logger().info(
-                f'Scheduler assigned job {job.job_id} ({job.route}) to {robot.name}; '
-                f'effective_score={score:.2f}, attempt={job.attempts}/{self.retry_limit + 1}, '
-                f'queue_size={len(self.job_queue)}'
+                f'Assigned job {job.job_id} ({job.route}) to {robot.name}, score={score:.2f}'
             )
             self.send_robot_to_station(robot, job.pickup)
 
     def available_robots(self) -> List[RobotWorker]:
         return [robot for robot in self.robots if not robot.busy]
 
-    def assignment_window_ready(self) -> bool:
+    def assignment_ready(self) -> bool:
         if self.last_assignment_time is None:
             return True
         elapsed = self.get_clock().now() - self.last_assignment_time
         return elapsed.nanoseconds >= int(self.assignment_stagger_sec * 1_000_000_000)
 
-    def choose_job_for_robot(self, robot: RobotWorker) -> Tuple[DeliveryJob, float]:
-        scored = [(self.effective_job_score(job, robot), job) for job in self.job_queue]
-        scored.sort(key=lambda item: (item[0], item[1].created_time_sec, item[1].job_id))
-        return scored[0][1], scored[0][0]
+    def choose_job(self, robot: RobotWorker) -> Tuple[DeliveryJob, float]:
+        scored_jobs = [(self.score_job(job, robot), job) for job in self.job_queue]
+        scored_jobs.sort(key=lambda item: (item[0], item[1].created_time, item[1].job_id))
+        return scored_jobs[0][1], scored_jobs[0][0]
 
-    def effective_job_score(self, job: DeliveryJob, robot: RobotWorker) -> float:
-        service = self.job_service_distance(job)
-        deadhead = self.robot_to_pickup_distance(robot, job)
-        wait_age = max(0.0, self.now_sec() - job.created_time_sec)
-        retry_penalty = 0.35 * job.attempts
-        return service + self.deadhead_weight * deadhead + retry_penalty - self.aging_weight * wait_age
+    def score_job(self, job: DeliveryJob, robot: RobotWorker) -> float:
+        job_length = station_distance(job.pickup, job.dropoff)
+        pickup_distance = self.distance_to_pickup(robot, job)
+        waiting_time = max(0.0, self.now_sec() - job.created_time)
+        return job_length + self.deadhead_weight * pickup_distance - self.aging_weight * waiting_time
 
-    def job_service_distance(self, job: DeliveryJob) -> float:
-        return station_distance(job.pickup, job.dropoff)
-
-    def robot_to_pickup_distance(self, robot: RobotWorker, job: DeliveryJob) -> float:
+    def distance_to_pickup(self, robot: RobotWorker, job: DeliveryJob) -> float:
         if robot.last_station in WAYPOINTS:
             return station_distance(robot.last_station, job.pickup)
         if robot.name in INITIAL_POSES:
-            return pose_distance_to_station(INITIAL_POSES[robot.name], job.pickup)
+            return pose_to_station_distance(INITIAL_POSES[robot.name], job.pickup)
         return 0.0
 
     def send_robot_to_station(self, robot: RobotWorker, station: str):
-        pose = WAYPOINTS[station]
         goal_msg = NavigateToPose.Goal()
-        goal_msg.pose = self.make_pose(*pose)
-        x, y, yaw = pose
-        self.get_logger().info(
-            f'{robot.name} job {robot.job.job_id}: going to {robot.phase} {station} '
-            f'at x={x:.2f}, y={y:.2f}, yaw={yaw:.2f}'
-        )
+        goal_msg.pose = self.make_pose(*WAYPOINTS[station])
+        self.get_logger().info(f'{robot.name} job {robot.job.job_id}: going to {station}')
 
         future = robot.action_client.send_goal_async(goal_msg)
         future.add_done_callback(lambda done, r=robot, s=station: self.goal_response(done, r, s))
@@ -343,7 +288,7 @@ class MultiRobotDispatcherNode(Node):
     def goal_response(self, future, robot: RobotWorker, station: str):
         goal_handle = future.result()
         if goal_handle is None or not goal_handle.accepted:
-            self.fail_robot_job(robot, f'goal to {station} was rejected')
+            self.fail_job(robot, f'goal to {station} was rejected')
             return
 
         robot.goal_handle = goal_handle
@@ -356,77 +301,50 @@ class MultiRobotDispatcherNode(Node):
         result = future.result()
         if result is None or result.status != 4:
             status = 'none' if result is None else result.status
-            self.fail_robot_job(robot, f'goal to {station} failed with status {status}')
+            self.fail_job(robot, f'goal to {station} failed with status {status}')
             return
 
         job = robot.job
         robot.last_station = station
         if robot.phase == 'pickup':
-            self.get_logger().info(
-                f'{robot.name} job {job.job_id}: pickup complete at {station}; '
-                f'waiting {self.pickup_wait_sec:.1f}s'
-            )
+            self.get_logger().info(f'{robot.name} picked up job {job.job_id} at {station}')
             robot.phase = 'dropoff_wait'
             wait_timer = None
 
-            def finish_pickup_wait(r=robot):
+            def done_waiting(r=robot):
                 wait_timer.cancel()
-                self.start_dropoff_once(r)
+                self.start_dropoff(r)
 
-            wait_timer = self.create_timer(self.pickup_wait_sec, finish_pickup_wait)
+            wait_timer = self.create_timer(self.pickup_wait_sec, done_waiting)
             return
 
         if robot.phase == 'dropoff':
             self.completed_jobs += 1
-            robot.completed_jobs += 1
-            robot.distance_traveled_estimate += self.job_service_distance(job)
-            self.get_logger().info(
-                f'{robot.name} job {job.job_id} complete: {job.route}. '
-                f'Completed={self.completed_jobs}, PermanentFailures={self.permanently_failed_jobs}'
-            )
+            self.get_logger().info(f'{robot.name} completed job {job.job_id}: {job.route}')
             self.release_robot(robot)
 
-    def start_dropoff_once(self, robot: RobotWorker):
+    def start_dropoff(self, robot: RobotWorker):
         if robot.phase != 'dropoff_wait':
             return
         robot.phase = 'dropoff'
         self.send_robot_to_station(robot, robot.job.dropoff)
 
-    def fail_robot_job(self, robot: RobotWorker, reason: str):
+    def fail_job(self, robot: RobotWorker, reason: str):
         job = robot.job
-        robot.failed_attempts += 1
         if job is None:
-            self.get_logger().error(f'{robot.name}: failed without an assigned job: {reason}')
+            self.get_logger().error(f'{robot.name} failed: {reason}')
             self.release_robot(robot)
             return
 
         if job.attempts <= self.retry_limit:
-            self.retry_attempts += 1
-            self.pending_retries += 1
-            self.get_logger().warn(
-                f'{robot.name} job {job.job_id} failed attempt {job.attempts}: {reason}. '
-                f'Requeueing after {self.retry_delay_sec:.1f}s with aging preserved.'
-            )
+            self.retries += 1
+            self.get_logger().warn(f'Job {job.job_id} failed, trying again later: {reason}')
             self.release_robot(robot)
-            retry_timer = None
-
-            def requeue_job(j=job):
-                retry_timer.cancel()
-                self.pending_retries = max(0, self.pending_retries - 1)
-                self.job_queue.append(j)
-                self.get_logger().info(
-                    f'Requeued job {j.job_id}: {j.route}; attempts={j.attempts}, '
-                    f'queue_size={len(self.job_queue)}'
-                )
-
-            retry_timer = self.create_timer(self.retry_delay_sec, requeue_job)
+            self.job_queue.append(job)
             return
 
-        self.permanently_failed_jobs += 1
-        self.get_logger().error(
-            f'{robot.name} job {job.job_id} permanently failed: {job.route}; {reason}. '
-            f'Completed={self.completed_jobs}, PermanentFailures={self.permanently_failed_jobs}'
-        )
+        self.failed_jobs += 1
+        self.get_logger().error(f'Job {job.job_id} failed permanently: {reason}')
         self.release_robot(robot)
 
     def release_robot(self, robot: RobotWorker):
@@ -434,30 +352,6 @@ class MultiRobotDispatcherNode(Node):
         robot.job = None
         robot.phase = 'idle'
         robot.goal_handle = None
-
-    def log_scheduler_snapshot(self):
-        robot_state = ', '.join(
-            f'{robot.name}:{robot.phase}'
-            + (f':job{robot.job.job_id}' if robot.job else '')
-            for robot in self.robots
-        )
-        queue_state = self.describe_queue()
-        self.get_logger().info(
-            f'Scheduler snapshot | queue=[{queue_state}] | robots=[{robot_state}] | '
-            f'completed={self.completed_jobs}, failed={self.permanently_failed_jobs}, '
-            f'retries={self.retry_attempts}, pending_retries={self.pending_retries}'
-        )
-
-    def describe_queue(self) -> str:
-        if not self.job_queue:
-            return 'empty'
-        sample = []
-        idle_robot = next((robot for robot in self.robots if not robot.busy), self.robots[0])
-        for job in sorted(self.job_queue, key=lambda j: self.effective_job_score(j, idle_robot))[:5]:
-            age = self.now_sec() - job.created_time_sec
-            score = self.effective_job_score(job, idle_robot)
-            sample.append(f'job{job.job_id}:{job.route}:score={score:.2f}:age={age:.1f}s')
-        return '; '.join(sample)
 
     def sleep_with_spin(self, seconds: float):
         end_time = self.get_clock().now().nanoseconds + int(seconds * 1_000_000_000)
