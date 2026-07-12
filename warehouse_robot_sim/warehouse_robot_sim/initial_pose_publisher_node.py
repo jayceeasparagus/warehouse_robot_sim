@@ -11,6 +11,7 @@ RobotPose = Tuple[float, float, float]
 INITIAL_POSES: Dict[str, RobotPose] = {
     'robot1': (-5.5, -1.0, 0.0),
     'robot2': (-5.5, 1.0, 0.0),
+    'robot3': (-5.5, 0.0, 0.0),
 }
 
 

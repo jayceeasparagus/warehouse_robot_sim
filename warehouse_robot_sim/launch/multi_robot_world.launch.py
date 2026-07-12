@@ -12,6 +12,7 @@ from launch_ros.actions import Node
 ROBOTS = [
     {'name': 'robot1', 'x': '-5.5', 'y': '-1.0', 'yaw': '0.0'},
     {'name': 'robot2', 'x': '-5.5', 'y': '1.0', 'yaw': '0.0'},
+    {'name': 'robot3', 'x': '-5.5', 'y': '0.0', 'yaw': '0.0'},
 ]
 
 

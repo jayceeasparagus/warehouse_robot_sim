@@ -35,6 +35,7 @@ def generate_launch_description():
         DeclareLaunchArgument('autostart', default_value='true'),
         nav2_bringup(nav2_share, package_share, 'robot1', 'nav2_params_robot1.yaml'),
         nav2_bringup(nav2_share, package_share, 'robot2', 'nav2_params_robot2.yaml'),
+        nav2_bringup(nav2_share, package_share, 'robot3', 'nav2_params_robot3.yaml'),
         TimerAction(
             period=20.0,
             actions=[
