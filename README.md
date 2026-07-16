@@ -1,58 +1,18 @@
-# Warehouse Robot Simulator
+# Multi-Robot Warehouse Simulation
 
-This is a ROS 2 project where TurtleBot robots drive around a small warehouse, receive pickup/dropoff jobs, and avoid shelves and other robots using Nav2.
+This project is a ROS 2 warehouse robot simulation where TurtleBots complete pickup and dropoff jobs in Gazebo. Each robot uses Nav2 for navigation, AMCL for localization, and RViz2 for visualizing maps, paths, costmaps, and robot behavior.
 
-The main goal was to learn ROS 2, Gazebo, RViz, Nav2, AMCL, and SLAM while also adding some software-engineering logic through a custom job dispatcher.
+The project also includes a small experiment dashboard. The dashboard lets a user choose a warehouse layout, number of robots, dispatcher policy, number of jobs, and random seed. After the run finishes, it shows scheduling and navigation metrics.
 
-## What It Does
+## Features
 
-- Runs a custom warehouse world in Gazebo
-- Spawns three TurtleBots: `robot1`, `robot2`, and `robot3`
-- Uses Nav2 to move each robot to warehouse stations
-- Uses local costmaps and laser scans for obstacle avoidance
-- Uses a Python dispatcher node to assign jobs to available robots
-- Supports random jobs or a fixed job sequence for testing
-- Uses a basic priority system:
-  - shorter jobs are preferred
-  - waiting jobs slowly gain priority so they do not starve
-  - robots closer to a pickup are slightly preferred
-
-## Main Files
-
-```text
-warehouse_robot_sim/
-  launch/
-    multi_robot_world.launch.py
-    multi_robot_navigation.launch.py
-
-  config/
-    nav2_params_robot1.yaml
-    nav2_params_robot2.yaml
-    nav2_params_robot3.yaml
-
-  maps/
-    warehouse_map.yaml          # map made with SLAM
-    clean_warehouse_map.yaml    # cleaner generated map for testing
-
-  worlds/
-    warehouse.world
-
-  warehouse_robot_sim/
-    multi_robot_dispatcher_node.py
-    initial_pose_publisher_node.py
-```
-
-## Warehouse Stations
-
-```text
-A1     A2     A3
-
-   driving aisle
-
-B1     B2     B3
-```
-
-The stations are used as pickup and dropoff points.
+- Multi-robot TurtleBot simulation in Gazebo
+- Nav2 navigation with robot namespaces
+- Static warehouse maps and generated benchmark layouts
+- Dynamic obstacle behavior through local Nav2 costmaps
+- Web dashboard for running experiments
+- Dispatcher policies: FCFS, shortest-job-first, SJF with aging, and nearest robot
+- Metrics for completed jobs, failed jobs, wait time, completion time, makespan, and utilization
 
 ## Build
 
@@ -63,9 +23,71 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-## Run
+Run the build again after changing Python files, launch files, maps, layouts, worlds, or dashboard files.
 
-Use three terminals.
+## Run the Dashboard
+
+```bash
+cd /mnt/c/Users/jayce/warehouse_robot_sim
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 run warehouse_robot_sim experiment_api
+```
+
+Open the dashboard in a browser:
+
+```text
+http://127.0.0.1:8080
+```
+
+From the dashboard, choose:
+
+- warehouse layout
+- robot count
+- scheduling policy
+- job count
+- random seed
+
+Then press **Start**. The backend launches the simulation, runs the dispatcher, records events, and updates the dashboard with final metrics.
+
+## Layouts
+
+Available layouts:
+
+- `standard`
+- `wide_aisle`
+- `asymmetric`
+
+The generated layouts are meant for cleaner testing, easier demos, and repeatable benchmarking. The original SLAM-created map files are still kept in the project.
+
+## Dispatcher Policies
+
+Available policies:
+
+- `fcfs`: first-come, first-served
+- `sjf`: shortest-job-first
+- `sjf_aging`: shortest-job-first with aging to reduce starvation
+- `nearest_robot`: assigns jobs based on robot distance when possible
+
+## Results
+
+Each dashboard experiment creates a folder in:
+
+```text
+/mnt/c/Users/jayce/warehouse_robot_sim/results/
+```
+
+Each result folder contains:
+
+- `config.json`: experiment settings
+- `summary.json`: final metrics
+- `jobs.csv`: job timing and outcome data
+- `events.jsonl`: dispatcher event log
+- ROS process logs for the world, navigation, and dispatcher
+
+## Manual Run
+
+The simulation can also be launched without the dashboard.
 
 Terminal 1:
 
@@ -73,7 +95,7 @@ Terminal 1:
 cd /mnt/c/Users/jayce/warehouse_robot_sim
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
-ros2 launch warehouse_robot_sim multi_robot_world.launch.py
+ros2 launch warehouse_robot_sim multi_robot_world.launch.py layout:=standard robot_count:=3
 ```
 
 Terminal 2:
@@ -82,7 +104,7 @@ Terminal 2:
 cd /mnt/c/Users/jayce/warehouse_robot_sim
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
-ros2 launch warehouse_robot_sim multi_robot_navigation.launch.py
+ros2 launch warehouse_robot_sim multi_robot_navigation.launch.py layout:=standard robot_count:=3
 ```
 
 Terminal 3:
@@ -91,5 +113,23 @@ Terminal 3:
 cd /mnt/c/Users/jayce/warehouse_robot_sim
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
-ros2 run warehouse_robot_sim multi_robot_dispatcher_node --ros-args -p use_sim_time:=true
+ros2 run warehouse_robot_sim multi_robot_dispatcher_node --ros-args \
+  -p use_sim_time:=true \
+  -p layout:=standard \
+  -p robots:="['robot1', 'robot2', 'robot3']" \
+  -p scheduler_policy:=sjf_aging \
+  -p max_jobs:=8 \
+  -p seed:=7
+```
+
+## Project Structure
+
+```text
+warehouse_robot_sim/
++-- dashboard/              Web experiment dashboard
++-- layouts/                Layout configs and station coordinates
++-- launch/                 Gazebo and Nav2 launch files
++-- maps/                   SLAM and generated occupancy maps
++-- worlds/                 Gazebo warehouse worlds
++-- warehouse_robot_sim/    ROS 2 Python nodes
 ```
