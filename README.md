@@ -6,7 +6,7 @@ The project also includes a small experiment dashboard. The dashboard lets a use
 
 ## Features
 
-- Multi-robot TurtleBot simulation in Gazebo
+- Configurable simulation with up to four TurtleBots in Gazebo
 - Nav2 navigation with robot namespaces
 - Static warehouse maps and generated benchmark layouts
 - Dynamic obstacle behavior through local Nav2 costmaps
@@ -57,6 +57,8 @@ Available layouts:
 - `standard`
 - `wide_aisle`
 - `asymmetric`
+- `compact`
+- `cross_traffic`
 
 The generated layouts are meant for cleaner testing, easier demos, and repeatable benchmarking. The original SLAM-created map files are still kept in the project.
 

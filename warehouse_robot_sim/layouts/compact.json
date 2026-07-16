@@ -1,0 +1,21 @@
+{
+  "name": "compact",
+  "display_name": "Compact Warehouse",
+  "description": "Narrow aisles create denser traffic and harder passing decisions.",
+  "world": "compact.world",
+  "map": "compact_map.yaml",
+  "initial_poses": {
+    "robot1": [-5.6, -2.8, 0.0],
+    "robot2": [-5.6, -0.9, 0.0],
+    "robot3": [-5.6, 0.9, 0.0],
+    "robot4": [-5.6, 2.8, 0.0]
+  },
+  "waypoints": {
+    "A1": [-3.6, 1.0, -1.57],
+    "A2": [0.0, 1.0, -1.57],
+    "A3": [3.6, 1.0, -1.57],
+    "B1": [-3.6, -1.0, 1.57],
+    "B2": [0.0, -1.0, 1.57],
+    "B3": [3.6, -1.0, 1.57]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "cross_traffic",
+  "display_name": "Cross-Traffic Warehouse",
+  "description": "Stations on opposite sides force robots through a shared center lane.",
+  "world": "cross_traffic.world",
+  "map": "cross_traffic_map.yaml",
+  "initial_poses": {
+    "robot1": [-1.8, -3.2, 1.57],
+    "robot2": [-0.6, -3.2, 1.57],
+    "robot3": [0.6, -3.2, 1.57],
+    "robot4": [1.8, -3.2, 1.57]
+  },
+  "waypoints": {
+    "A1": [-2.55, -2.3, 3.14],
+    "A2": [-2.55, 0.0, 3.14],
+    "A3": [-2.55, 2.3, 3.14],
+    "B1": [2.55, -2.3, 0.0],
+    "B2": [2.55, 0.0, 0.0],
+    "B3": [2.55, 2.3, 0.0]
+  }
+}

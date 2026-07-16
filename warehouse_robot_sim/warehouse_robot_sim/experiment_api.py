@@ -47,7 +47,7 @@ class ExperimentManager:
         return {
             'layouts': layouts,
             'schedulers': [{'id': key, 'name': name} for key, name in SCHEDULERS.items()],
-            'robot_counts': [1, 2, 3],
+            'robot_counts': [1, 2, 3, 4],
             'defaults': {
                 'layout': 'standard',
                 'robot_count': 3,
@@ -104,8 +104,8 @@ class ExperimentManager:
         scheduler_policy = str(payload.get('scheduler_policy', 'sjf_aging'))
         if scheduler_policy not in SCHEDULERS:
             raise ValueError(f'Unknown scheduler: {scheduler_policy}')
-        if robot_count < 1 or robot_count > 3:
-            raise ValueError('Robot count must be between 1 and 3.')
+        if robot_count < 1 or robot_count > 4:
+            raise ValueError('Robot count must be between 1 and 4.')
         if job_count < 1 or job_count > 50:
             raise ValueError('Job count must be between 1 and 50.')
         if seed < 0:

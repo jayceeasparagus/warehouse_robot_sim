@@ -390,6 +390,8 @@
           <button class="preset-button" type="button" data-preset="quick">Quick check</button>
           <button class="preset-button" type="button" data-preset="traffic">Three-robot traffic</button>
           <button class="preset-button" type="button" data-preset="asymmetric">Asymmetric flow</button>
+          <button class="preset-button" type="button" data-preset="compact">Compact stress test</button>
+          <button class="preset-button" type="button" data-preset="crossing">Four-robot crossing</button>
           <button class="preset-button" type="button" data-preset="baseline">FCFS baseline</button>
         </div>
 
@@ -462,6 +464,8 @@
       quick: { layout: 'standard', robot_count: 2, scheduler_policy: 'sjf_aging', job_count: 4, seed: 7 },
       traffic: { layout: 'wide_aisle', robot_count: 3, scheduler_policy: 'nearest_robot', job_count: 10, seed: 12 },
       asymmetric: { layout: 'asymmetric', robot_count: 3, scheduler_policy: 'sjf_aging', job_count: 8, seed: 21 },
+      compact: { layout: 'compact', robot_count: 4, scheduler_policy: 'sjf_aging', job_count: 12, seed: 18 },
+      crossing: { layout: 'cross_traffic', robot_count: 4, scheduler_policy: 'nearest_robot', job_count: 12, seed: 31 },
       baseline: { layout: 'standard', robot_count: 2, scheduler_policy: 'fcfs', job_count: 6, seed: 7 }
     };
 
