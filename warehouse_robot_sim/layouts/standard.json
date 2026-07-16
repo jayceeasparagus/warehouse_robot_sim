@@ -1,0 +1,20 @@
+{
+  "name": "standard",
+  "display_name": "Standard Warehouse",
+  "description": "Six shelves with a central two-way aisle.",
+  "world": "warehouse.world",
+  "map": "clean_warehouse_map.yaml",
+  "initial_poses": {
+    "robot1": [-5.5, -1.0, 0.0],
+    "robot2": [-5.5, 1.0, 0.0],
+    "robot3": [-5.5, 0.0, 0.0]
+  },
+  "waypoints": {
+    "A1": [-4.0, 1.20, -1.57],
+    "A2": [0.0, 1.20, -1.57],
+    "A3": [4.0, 1.20, -1.57],
+    "B1": [-4.0, -1.20, 1.57],
+    "B2": [0.0, -1.20, 1.57],
+    "B3": [4.0, -1.20, 1.57]
+  }
+}

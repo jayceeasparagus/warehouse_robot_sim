@@ -2,21 +2,21 @@ import math
 import sys
 from typing import Dict, Tuple
 
-import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
+import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
 StationPose = Tuple[float, float, float]
 
 WAYPOINTS: Dict[str, StationPose] = {
-    'A1': (-4.0, 0.75, -1.57),
-    'A2': (0.0, 0.75, -1.57),
-    'A3': (4.0, 0.75, -1.57),
-    'B1': (-4.0, -0.75, 1.57),
-    'B2': (0.0, -0.75, 1.57),
-    'B3': (4.0, -0.75, 1.57),
+    'A1': (-4.0, 1.20, -1.57),
+    'A2': (0.0, 1.20, -1.57),
+    'A3': (4.0, 1.20, -1.57),
+    'B1': (-4.0, -1.20, 1.57),
+    'B2': (0.0, -1.20, 1.57),
+    'B3': (4.0, -1.20, 1.57),
 }
 
 
@@ -83,7 +83,9 @@ class DeliveryTaskNode(Node):
 
         status = result.status
         if status != 4:
-            self.get_logger().error(f'{label.capitalize()} goal {station} failed with status {status}.')
+            self.get_logger().error(
+                f'{label.capitalize()} goal {station} failed with status {status}.'
+            )
             return False
 
         self.get_logger().info(f'Reached {label} station {station}.')

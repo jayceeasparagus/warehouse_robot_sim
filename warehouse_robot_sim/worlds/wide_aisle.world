@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.6">
-  <world name="warehouse_world">
+  <world name="wide_aisle_world">
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
@@ -104,7 +104,7 @@
     <!-- Shelf stations -->
     <model name="shelf_A1">
       <static>true</static>
-      <pose>-4 2 0.5 0 0 0</pose>
+      <pose>-4 2.5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.5 0.5 1</size></box></geometry>
@@ -118,7 +118,7 @@
 
     <model name="shelf_A2">
       <static>true</static>
-      <pose>0 2 0.5 0 0 0</pose>
+      <pose>0 2.5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.5 0.5 1</size></box></geometry>
@@ -132,7 +132,7 @@
 
     <model name="shelf_A3">
       <static>true</static>
-      <pose>4 2 0.5 0 0 0</pose>
+      <pose>4 2.5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.5 0.5 1</size></box></geometry>
@@ -146,7 +146,7 @@
 
     <model name="shelf_B1">
       <static>true</static>
-      <pose>-4 -2 0.5 0 0 0</pose>
+      <pose>-4 -2.5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.5 0.5 1</size></box></geometry>
@@ -160,7 +160,7 @@
 
     <model name="shelf_B2">
       <static>true</static>
-      <pose>0 -2 0.5 0 0 0</pose>
+      <pose>0 -2.5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.5 0.5 1</size></box></geometry>
@@ -174,7 +174,7 @@
 
     <model name="shelf_B3">
       <static>true</static>
-      <pose>4 -2 0.5 0 0 0</pose>
+      <pose>4 -2.5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry><box><size>1.5 0.5 1</size></box></geometry>
@@ -187,12 +187,12 @@
     </model>
 
     <!-- Station pads match the navigation goal coordinates. -->
-    <model name="pad_A1"><static>true</static><pose>-4 1.2 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.08 0.56 0.50 1</ambient><diffuse>0.08 0.70 0.62 1</diffuse></material></visual></link></model>
-    <model name="pad_A2"><static>true</static><pose>0 1.2 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.08 0.56 0.50 1</ambient><diffuse>0.08 0.70 0.62 1</diffuse></material></visual></link></model>
-    <model name="pad_A3"><static>true</static><pose>4 1.2 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.08 0.56 0.50 1</ambient><diffuse>0.08 0.70 0.62 1</diffuse></material></visual></link></model>
-    <model name="pad_B1"><static>true</static><pose>-4 -1.2 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.78 0.39 0.05 1</ambient><diffuse>0.95 0.57 0.10 1</diffuse></material></visual></link></model>
-    <model name="pad_B2"><static>true</static><pose>0 -1.2 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.78 0.39 0.05 1</ambient><diffuse>0.95 0.57 0.10 1</diffuse></material></visual></link></model>
-    <model name="pad_B3"><static>true</static><pose>4 -1.2 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.78 0.39 0.05 1</ambient><diffuse>0.95 0.57 0.10 1</diffuse></material></visual></link></model>
+    <model name="pad_A1"><static>true</static><pose>-4 1.7 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.08 0.56 0.50 1</ambient><diffuse>0.08 0.70 0.62 1</diffuse></material></visual></link></model>
+    <model name="pad_A2"><static>true</static><pose>0 1.7 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.08 0.56 0.50 1</ambient><diffuse>0.08 0.70 0.62 1</diffuse></material></visual></link></model>
+    <model name="pad_A3"><static>true</static><pose>4 1.7 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.08 0.56 0.50 1</ambient><diffuse>0.08 0.70 0.62 1</diffuse></material></visual></link></model>
+    <model name="pad_B1"><static>true</static><pose>-4 -1.7 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.78 0.39 0.05 1</ambient><diffuse>0.95 0.57 0.10 1</diffuse></material></visual></link></model>
+    <model name="pad_B2"><static>true</static><pose>0 -1.7 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.78 0.39 0.05 1</ambient><diffuse>0.95 0.57 0.10 1</diffuse></material></visual></link></model>
+    <model name="pad_B3"><static>true</static><pose>4 -1.7 0.01 0 0 0</pose><link name="link"><visual name="visual"><geometry><box><size>0.8 0.55 0.02</size></box></geometry><material><ambient>0.78 0.39 0.05 1</ambient><diffuse>0.95 0.57 0.10 1</diffuse></material></visual></link></model>
   </world>
 </sdf>
 

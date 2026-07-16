@@ -1,0 +1,20 @@
+{
+  "name": "wide_aisle",
+  "display_name": "Wide Aisle Warehouse",
+  "description": "Shelves moved outward for higher-throughput crossing tests.",
+  "world": "wide_aisle.world",
+  "map": "wide_aisle_map.yaml",
+  "initial_poses": {
+    "robot1": [-5.5, -1.0, 0.0],
+    "robot2": [-5.5, 1.0, 0.0],
+    "robot3": [-5.5, 0.0, 0.0]
+  },
+  "waypoints": {
+    "A1": [-4.0, 1.70, -1.57],
+    "A2": [0.0, 1.70, -1.57],
+    "A3": [4.0, 1.70, -1.57],
+    "B1": [-4.0, -1.70, 1.57],
+    "B2": [0.0, -1.70, 1.57],
+    "B3": [4.0, -1.70, 1.57]
+  }
+}

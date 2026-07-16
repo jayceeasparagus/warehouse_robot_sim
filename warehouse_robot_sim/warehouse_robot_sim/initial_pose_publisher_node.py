@@ -1,18 +1,14 @@
 import math
 from typing import Dict, Tuple
 
-import rclpy
 from geometry_msgs.msg import PoseWithCovarianceStamped
+import rclpy
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 
-RobotPose = Tuple[float, float, float]
+from warehouse_robot_sim.layout_config import initial_poses, load_layout
 
-INITIAL_POSES: Dict[str, RobotPose] = {
-    'robot1': (-5.5, -1.0, 0.0),
-    'robot2': (-5.5, 1.0, 0.0),
-    'robot3': (-5.5, 0.0, 0.0),
-}
+RobotPose = Tuple[float, float, float]
 
 
 def yaw_to_quaternion(yaw: float):
@@ -27,11 +23,21 @@ class InitialPosePublisherNode(Node):
         self.declare_parameter('publish_count', 8)
         self.declare_parameter('publish_period_sec', 1.0)
         self.declare_parameter('require_subscribers', True)
+        self.declare_parameter('layout', 'standard')
+        self.declare_parameter('robots', ['robot1', 'robot2', 'robot3'])
 
         self.start_delay_sec = float(self.get_parameter('start_delay_sec').value)
         self.publish_count = int(self.get_parameter('publish_count').value)
         self.publish_period_sec = float(self.get_parameter('publish_period_sec').value)
         self.require_subscribers = bool(self.get_parameter('require_subscribers').value)
+        layout = load_layout(str(self.get_parameter('layout').value))
+        all_initial_poses = initial_poses(layout)
+        robot_names = list(self.get_parameter('robots').value)
+        self.initial_poses: Dict[str, RobotPose] = {
+            name: all_initial_poses[name]
+            for name in robot_names
+            if name in all_initial_poses
+        }
 
         qos = QoSProfile(
             depth=10,
@@ -39,8 +45,12 @@ class InitialPosePublisherNode(Node):
             durability=DurabilityPolicy.VOLATILE,
         )
         self.initial_pose_publishers = {
-            robot_name: self.create_publisher(PoseWithCovarianceStamped, f'/{robot_name}/initialpose', qos)
-            for robot_name in INITIAL_POSES
+            robot_name: self.create_publisher(
+                PoseWithCovarianceStamped,
+                f'/{robot_name}/initialpose',
+                qos,
+            )
+            for robot_name in self.initial_poses
         }
         self.published = 0
         self.done = False
@@ -48,7 +58,7 @@ class InitialPosePublisherNode(Node):
         self.timer = self.create_timer(self.start_delay_sec, self.start_publishing)
         self.get_logger().info(
             f'Waiting {self.start_delay_sec:.1f}s before publishing initial poses for '
-            f'{", ".join(INITIAL_POSES)}'
+            f'{", ".join(self.initial_poses)}'
         )
 
     def start_publishing(self):
@@ -77,7 +87,7 @@ class InitialPosePublisherNode(Node):
             self.get_logger().info('AMCL initialpose subscribers are ready.')
 
         self.published += 1
-        for robot_name, pose in INITIAL_POSES.items():
+        for robot_name, pose in self.initial_poses.items():
             msg = self.make_pose(*pose)
             self.initial_pose_publishers[robot_name].publish(msg)
             x, y, yaw = pose

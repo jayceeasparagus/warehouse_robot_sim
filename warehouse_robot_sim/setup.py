@@ -1,5 +1,5 @@
-import os
 from glob import glob
+import os
 
 from setuptools import find_packages, setup
 
@@ -24,12 +24,17 @@ setup(
         ('share/' + package_name + '/maps', package_files('maps')),
         ('share/' + package_name + '/config', package_files('config')),
         ('share/' + package_name + '/scripts', package_files('scripts')),
+        ('share/' + package_name + '/layouts', package_files('layouts')),
+        ('share/' + package_name + '/dashboard', package_files('dashboard')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='jayce',
     maintainer_email='jayceeasparagus@gmail.com',
-    description='ROS 2 warehouse robot simulation with TurtleBot navigation, SLAM, Nav2, and task dispatching.',
+    description=(
+        'ROS 2 warehouse robot simulation with TurtleBot navigation, SLAM, '
+        'Nav2, and task dispatching.'
+    ),
     license='MIT',
     extras_require={
         'test': [
@@ -42,9 +47,7 @@ setup(
             'job_dispatcher_node = warehouse_robot_sim.job_dispatcher_node:main',
             'multi_robot_dispatcher_node = warehouse_robot_sim.multi_robot_dispatcher_node:main',
             'initial_pose_publisher_node = warehouse_robot_sim.initial_pose_publisher_node:main',
+            'experiment_api = warehouse_robot_sim.experiment_api:main',
         ],
     },
 )
-
-
-

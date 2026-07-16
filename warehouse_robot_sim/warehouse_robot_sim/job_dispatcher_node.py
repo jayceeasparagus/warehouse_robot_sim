@@ -1,24 +1,24 @@
-import math
-import random
 from collections import deque
 from dataclasses import dataclass
+import math
+import random
 from typing import Deque, Dict, Tuple
 
-import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
+import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
 StationPose = Tuple[float, float, float]
 
 WAYPOINTS: Dict[str, StationPose] = {
-    'A1': (-4.0, 0.75, -1.57),
-    'A2': (0.0, 0.75, -1.57),
-    'A3': (4.0, 0.75, -1.57),
-    'B1': (-4.0, -0.75, 1.57),
-    'B2': (0.0, -0.75, 1.57),
-    'B3': (4.0, -0.75, 1.57),
+    'A1': (-4.0, 1.20, -1.57),
+    'A2': (0.0, 1.20, -1.57),
+    'A3': (4.0, 1.20, -1.57),
+    'B1': (-4.0, -1.20, 1.57),
+    'B2': (0.0, -1.20, 1.57),
+    'B3': (4.0, -1.20, 1.57),
 }
 
 
@@ -62,7 +62,8 @@ class JobDispatcherNode(Node):
             return False
 
         self.get_logger().info(
-            f'Dispatcher ready: job_interval={self.job_interval_sec:.1f}s, max_jobs={self.max_jobs}'
+            f'Dispatcher ready: job_interval={self.job_interval_sec:.1f}s, '
+            f'max_jobs={self.max_jobs}'
         )
 
         while rclpy.ok() and self.next_job_id <= self.max_jobs:
@@ -110,7 +111,8 @@ class JobDispatcherNode(Node):
 
         job.status = 'picking_up'
         self.get_logger().info(
-            f'Job {job.job_id}: pickup complete at {job.pickup}; waiting {self.pickup_wait_sec:.1f}s'
+            f'Job {job.job_id}: pickup complete at {job.pickup}; '
+            f'waiting {self.pickup_wait_sec:.1f}s'
         )
         self.sleep_with_spin(self.pickup_wait_sec)
 
@@ -144,7 +146,8 @@ class JobDispatcherNode(Node):
         goal_msg.pose = self.make_pose(*pose)
         x, y, yaw = pose
         self.get_logger().info(
-            f'Job {job_id}: navigating to {label} {station} at x={x:.2f}, y={y:.2f}, yaw={yaw:.2f}'
+            f'Job {job_id}: navigating to {label} {station} at '
+            f'x={x:.2f}, y={y:.2f}, yaw={yaw:.2f}'
         )
 
         send_future = self._action_client.send_goal_async(goal_msg)

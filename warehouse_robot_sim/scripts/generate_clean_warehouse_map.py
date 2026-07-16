@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate a clean occupancy-grid map matching worlds/warehouse.world.
+"""
+Generate clean occupancy-grid maps for the benchmark worlds.
 
 This map is intentionally generated from known Gazebo world geometry for stable
 Nav2 testing. It does not replace the SLAM map; keep the SLAM map as proof of
@@ -20,18 +21,39 @@ FREE = 254
 OCCUPIED = 0
 
 # name, center_x, center_y, size_x, size_y
-BOXES = [
-    ("north_wall", 0.0, 4.0, 14.0, 0.2),
-    ("south_wall", 0.0, -4.0, 14.0, 0.2),
-    ("west_wall", -7.0, 0.0, 0.2, 8.0),
-    ("east_wall", 7.0, 0.0, 0.2, 8.0),
-    ("shelf_A1", -4.0, 2.0, 1.5, 0.5),
-    ("shelf_A2", 0.0, 2.0, 1.5, 0.5),
-    ("shelf_A3", 4.0, 2.0, 1.5, 0.5),
-    ("shelf_B1", -4.0, -2.0, 1.5, 0.5),
-    ("shelf_B2", 0.0, -2.0, 1.5, 0.5),
-    ("shelf_B3", 4.0, -2.0, 1.5, 0.5),
+BOUNDARIES = [
+    ('north_wall', 0.0, 4.0, 14.0, 0.2),
+    ('south_wall', 0.0, -4.0, 14.0, 0.2),
+    ('west_wall', -7.0, 0.0, 0.2, 8.0),
+    ('east_wall', 7.0, 0.0, 0.2, 8.0),
 ]
+
+LAYOUTS = {
+    'clean_warehouse': [
+        ('shelf_A1', -4.0, 2.0, 1.5, 0.5),
+        ('shelf_A2', 0.0, 2.0, 1.5, 0.5),
+        ('shelf_A3', 4.0, 2.0, 1.5, 0.5),
+        ('shelf_B1', -4.0, -2.0, 1.5, 0.5),
+        ('shelf_B2', 0.0, -2.0, 1.5, 0.5),
+        ('shelf_B3', 4.0, -2.0, 1.5, 0.5),
+    ],
+    'wide_aisle': [
+        ('shelf_A1', -4.0, 2.5, 1.5, 0.5),
+        ('shelf_A2', 0.0, 2.5, 1.5, 0.5),
+        ('shelf_A3', 4.0, 2.5, 1.5, 0.5),
+        ('shelf_B1', -4.0, -2.5, 1.5, 0.5),
+        ('shelf_B2', 0.0, -2.5, 1.5, 0.5),
+        ('shelf_B3', 4.0, -2.5, 1.5, 0.5),
+    ],
+    'asymmetric': [
+        ('shelf_A1', -4.5, 2.4, 1.5, 0.5),
+        ('shelf_A2', -0.5, 1.85, 1.5, 0.5),
+        ('shelf_A3', 3.7, 2.25, 1.5, 0.5),
+        ('shelf_B1', -3.8, -2.05, 1.5, 0.5),
+        ('shelf_B2', 0.8, -2.45, 1.5, 0.5),
+        ('shelf_B3', 4.6, -1.75, 1.5, 0.5),
+    ],
+}
 
 
 def world_to_pixel(x: float, y: float):
@@ -61,47 +83,48 @@ def fill_box(grid, center_x: float, center_y: float, size_x: float, size_y: floa
 
 
 def write_pgm(path: Path, grid):
-    with path.open("wb") as pgm:
-        pgm.write(f"P5\n{WIDTH} {HEIGHT}\n255\n".encode("ascii"))
+    with path.open('wb') as pgm:
+        pgm.write(f'P5\n{WIDTH} {HEIGHT}\n255\n'.encode('ascii'))
         for row in grid:
             pgm.write(bytes(row))
 
 
 def write_yaml(path: Path, image_name: str):
     path.write_text(
-        "\n".join(
+        '\n'.join(
             [
-                f"image: {image_name}",
-                "mode: trinary",
-                f"resolution: {RESOLUTION}",
-                f"origin: [{ORIGIN_X}, {ORIGIN_Y}, 0.0]",
-                "negate: 0",
-                "occupied_thresh: 0.65",
-                "free_thresh: 0.25",
-                "",
+                f'image: {image_name}',
+                'mode: trinary',
+                f'resolution: {RESOLUTION}',
+                f'origin: [{ORIGIN_X}, {ORIGIN_Y}, 0.0]',
+                'negate: 0',
+                'occupied_thresh: 0.65',
+                'free_thresh: 0.25',
+                '',
             ]
         ),
-        encoding="ascii",
+        encoding='ascii',
     )
 
 
 def main():
     package_dir = Path(__file__).resolve().parents[1]
-    maps_dir = package_dir / "maps"
+    maps_dir = package_dir / 'maps'
     maps_dir.mkdir(parents=True, exist_ok=True)
 
-    grid = [[FREE for _ in range(WIDTH)] for _ in range(HEIGHT)]
-    for _, x, y, sx, sy in BOXES:
-        fill_box(grid, x, y, sx, sy)
+    for layout_name, shelves in LAYOUTS.items():
+        grid = [[FREE for _ in range(WIDTH)] for _ in range(HEIGHT)]
+        for _, x, y, sx, sy in BOUNDARIES + shelves:
+            fill_box(grid, x, y, sx, sy)
 
-    pgm_path = maps_dir / "clean_warehouse_map.pgm"
-    yaml_path = maps_dir / "clean_warehouse_map.yaml"
-    write_pgm(pgm_path, grid)
-    write_yaml(yaml_path, pgm_path.name)
+        pgm_path = maps_dir / f'{layout_name}_map.pgm'
+        yaml_path = maps_dir / f'{layout_name}_map.yaml'
+        write_pgm(pgm_path, grid)
+        write_yaml(yaml_path, pgm_path.name)
 
-    print(f"Wrote {pgm_path}")
-    print(f"Wrote {yaml_path}")
+        print(f'Wrote {pgm_path}')
+        print(f'Wrote {yaml_path}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
