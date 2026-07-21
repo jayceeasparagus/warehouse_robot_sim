@@ -12,7 +12,9 @@ from urllib.parse import parse_qs, urlparse
 
 from ament_index_python.packages import get_package_share_directory
 
+from warehouse_robot_sim.custom_layout import make_layout
 from warehouse_robot_sim.layout_config import available_layouts
+from warehouse_robot_sim.experiment_store import ExperimentStore
 
 
 SCHEDULERS = {
@@ -23,6 +25,12 @@ SCHEDULERS = {
 }
 
 
+def as_bool(value):
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
 class ExperimentManager:
     def __init__(self, host='127.0.0.1', port=8080):
         self.host = host
@@ -30,10 +38,15 @@ class ExperimentManager:
         self.package_share = Path(get_package_share_directory('warehouse_robot_sim'))
         self.workspace_root = self._find_workspace_root()
         self.results_root = self.workspace_root / 'results'
+        self.results_root.mkdir(parents=True, exist_ok=True)
+        self.custom_layouts_root = self.workspace_root / 'custom_layouts'
+        self.custom_layouts_root.mkdir(parents=True, exist_ok=True)
         self.dashboard_path = self.package_share / 'dashboard' / 'index.html'
         self.lock = threading.Lock()
         self.experiments = {}
         self.active_id = None
+        self.store = ExperimentStore(self.results_root / 'experiments.db')
+        self.imported_experiments = self.store.import_existing_results(self.results_root)
 
     def _find_workspace_root(self):
         current = self.package_share
@@ -43,7 +56,7 @@ class ExperimentManager:
         return Path.cwd()
 
     def config(self):
-        layouts = available_layouts()
+        layouts = available_layouts(self.package_share, self.custom_layouts_root)
         return {
             'layouts': layouts,
             'schedulers': [{'id': key, 'name': name} for key, name in SCHEDULERS.items()],
@@ -54,6 +67,7 @@ class ExperimentManager:
                 'scheduler_policy': 'sjf_aging',
                 'job_count': 8,
                 'seed': 7,
+                'close_after_run': True,
             },
             'active_experiment_id': self.active_id,
         }
@@ -84,14 +98,16 @@ class ExperimentManager:
             self.experiments[experiment_id] = experiment
             self.active_id = experiment_id
 
+        self.store.save_experiment(experiment)
         thread = threading.Thread(target=self._run_experiment, args=(experiment,), daemon=True)
         thread.start()
         return self.public_experiment(experiment_id)
 
     def _validate(self, payload):
-        layout_names = {layout['name'] for layout in available_layouts()}
+        layouts = available_layouts(self.package_share, self.custom_layouts_root)
+        layouts_by_name = {item['name']: item for item in layouts}
         layout = str(payload.get('layout', 'standard'))
-        if layout not in layout_names:
+        if layout not in layouts_by_name:
             raise ValueError(f'Unknown layout: {layout}')
 
         try:
@@ -102,10 +118,17 @@ class ExperimentManager:
             raise ValueError('Robot count, job count, and seed must be integers.') from exc
 
         scheduler_policy = str(payload.get('scheduler_policy', 'sjf_aging'))
+        close_after_run = as_bool(payload.get('close_after_run', True))
         if scheduler_policy not in SCHEDULERS:
             raise ValueError(f'Unknown scheduler: {scheduler_policy}')
         if robot_count < 1 or robot_count > 4:
             raise ValueError('Robot count must be between 1 and 4.')
+        max_robots = len(layouts_by_name[layout]['initial_poses'])
+        if robot_count > max_robots:
+            raise ValueError(
+                f'{layouts_by_name[layout]["display_name"]} supports '
+                f'up to {max_robots} robots.'
+            )
         if job_count < 1 or job_count > 50:
             raise ValueError('Job count must be between 1 and 50.')
         if seed < 0:
@@ -117,7 +140,11 @@ class ExperimentManager:
             'scheduler_policy': scheduler_policy,
             'job_count': job_count,
             'seed': seed,
+            'close_after_run': close_after_run,
         }
+
+    def create_custom_layout(self, payload):
+        return make_layout(payload, self.custom_layouts_root)
 
     def _run_experiment(self, experiment):
         config = experiment['config']
@@ -145,6 +172,28 @@ class ExperimentManager:
             if not self._sleep_or_stop(experiment, 8.0):
                 return
 
+            monitor_parameters = [
+                '--ros-args',
+                '-p', 'use_sim_time:=true',
+                '-p', f'robots:={json.dumps(robots)}',
+                '-p', f'results_dir:={result_dir.as_posix()}',
+            ]
+            self._start_process(
+                experiment,
+                'fleet_metrics',
+                ['ros2', 'run', 'warehouse_robot_sim', 'fleet_metrics_node']
+                + monitor_parameters,
+            )
+            self._start_process(
+                experiment,
+                'station_occupancy',
+                ['ros2', 'run', 'warehouse_robot_sim', 'station_occupancy_node']
+                + monitor_parameters
+                + ['-p', f'layout:={config["layout"]}'],
+            )
+            if not self._sleep_or_stop(experiment, 1.0):
+                return
+
             self._set_status(experiment, 'running', 'Dispatcher is running jobs.')
             dispatcher = self._start_process(
                 experiment,
@@ -165,6 +214,7 @@ class ExperimentManager:
                 ],
             )
             return_code = self._wait_for_dispatcher(experiment, dispatcher)
+            self._add_custom_metrics(result_dir)
             summary = self._load_summary(result_dir)
             status = 'completed'
             message = 'Experiment complete.'
@@ -177,15 +227,15 @@ class ExperimentManager:
             elif summary and summary.get('jobs_failed', 0) > 0:
                 status = 'completed_with_failures'
                 message = 'Experiment finished with failed jobs.'
-            if not experiment['stop_event'].is_set():
+            if not config['close_after_run'] and not experiment['stop_event'].is_set():
                 self._set_status(
                     experiment,
                     'reviewing',
-                    'Experiment complete. Gazebo is staying open for review.',
+                    'Run complete. Press Stop to close the simulation.',
                     summary,
                 )
-                if not self._sleep_or_stop(experiment, 120.0):
-                    return
+                while not experiment['stop_event'].is_set():
+                    time.sleep(0.25)
             self._set_status(experiment, status, message, summary)
         except Exception as exc:
             self._set_status(experiment, 'failed', str(exc))
@@ -202,6 +252,7 @@ class ExperimentManager:
         process = subprocess.Popen(
             args,
             cwd=str(self.workspace_root),
+            env=self._process_environment(),
             stdout=log_file,
             stderr=subprocess.STDOUT,
             text=True,
@@ -209,6 +260,11 @@ class ExperimentManager:
         )
         experiment['processes'].append({'name': name, 'process': process, 'log_file': log_file})
         return process
+
+    def _process_environment(self):
+        environment = os.environ.copy()
+        environment['WAREHOUSE_CUSTOM_LAYOUT_DIR'] = str(self.custom_layouts_root)
+        return environment
 
     def _start_world_process(self, experiment):
         config = experiment['config']
@@ -266,6 +322,7 @@ class ExperimentManager:
             experiment['status'] = 'stopping'
             experiment['message'] = 'Stopping experiment.'
             experiment['updated_at'] = time.time()
+        self.store.save_experiment(experiment)
         return self.public_experiment(experiment_id)
 
     def public_experiment(self, experiment_id):
@@ -273,7 +330,10 @@ class ExperimentManager:
         with self.lock:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
-                raise ValueError('Experiment not found.')
+                saved_experiment = self.store.get_experiment(experiment_id)
+                if saved_experiment is None:
+                    raise ValueError('Experiment not found.')
+                return saved_experiment
             result_dir = Path(experiment['result_dir'])
             summary = experiment.get('summary') or self._load_summary(result_dir)
             recent_events = self._load_recent_events(result_dir)
@@ -289,6 +349,9 @@ class ExperimentManager:
                 'recent_events': recent_events,
             }
 
+    def list_experiments(self, limit=20):
+        return self.store.list_experiments(limit)
+
     def _set_status(self, experiment, status, message, summary=None):
         with self.lock:
             experiment['status'] = status
@@ -296,6 +359,8 @@ class ExperimentManager:
             experiment['updated_at'] = time.time()
             if summary is not None:
                 experiment['summary'] = summary
+        self.store.save_experiment(experiment)
+        self.store.sync_result_files(experiment['id'], experiment['result_dir'])
 
     def _write_requested_config(self, result_dir, config):
         with (result_dir / 'config.json').open('w', encoding='utf-8') as file:
@@ -310,6 +375,21 @@ class ExperimentManager:
                 return json.load(file)
         except json.JSONDecodeError:
             return None
+
+    def _add_custom_metrics(self, result_dir):
+        summary_path = result_dir / 'summary.json'
+        if not summary_path.exists():
+            return
+
+        try:
+            summary = json.loads(summary_path.read_text(encoding='utf-8'))
+            for name in ('fleet_metrics', 'station_occupancy'):
+                metrics_path = result_dir / f'{name}.json'
+                if metrics_path.exists():
+                    summary[name] = json.loads(metrics_path.read_text(encoding='utf-8'))
+            summary_path.write_text(json.dumps(summary, indent=2), encoding='utf-8')
+        except (OSError, json.JSONDecodeError):
+            return
 
     def _load_recent_events(self, result_dir, limit=12):
         events_path = result_dir / 'events.jsonl'
@@ -333,6 +413,14 @@ class ExperimentRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == '/api/config':
             self._send_json(self.manager.config())
             return
+        if parsed.path == '/api/experiments':
+            query = parse_qs(parsed.query)
+            try:
+                limit = int(query.get('limit', ['20'])[-1])
+            except ValueError:
+                limit = 20
+            self._send_json({'experiments': self.manager.list_experiments(limit)})
+            return
         if parsed.path.startswith('/api/experiments/'):
             experiment_id = parsed.path.rsplit('/', 1)[-1]
             try:
@@ -344,6 +432,15 @@ class ExperimentRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == '/api/layouts':
+            payload = self._read_payload()
+            try:
+                self._send_json(
+                    self.manager.create_custom_layout(payload), status=201
+                )
+            except ValueError as exc:
+                self._send_json({'error': str(exc)}, status=400)
+            return
         if parsed.path == '/api/experiments':
             payload = self._read_payload()
             try:
@@ -413,6 +510,10 @@ def main():
     server = make_server(manager)
     print(f'Experiment dashboard running at http://{manager.host}:{manager.port}')
     print(f'Results will be saved under {manager.results_root}')
+    print(
+        f'SQLite history ready: {manager.results_root / "experiments.db"} '
+        f'({manager.imported_experiments} result folders indexed)'
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

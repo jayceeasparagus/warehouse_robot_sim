@@ -96,7 +96,7 @@
 
     main {
       display: grid;
-      grid-template-columns: 330px minmax(0, 1fr);
+      grid-template-columns: 310px minmax(0, 1fr);
       gap: 14px;
       width: min(1380px, 100%);
       margin: 0 auto;
@@ -110,6 +110,19 @@
     }
 
     .panel-body { padding: 16px; }
+
+    .setup-panel {
+      position: sticky;
+      top: 14px;
+      align-self: start;
+      min-height: calc(100vh - 90px);
+    }
+
+    .setup-body {
+      display: flex;
+      min-height: calc(100vh - 90px);
+      flex-direction: column;
+    }
 
     h2 {
       margin: 0 0 12px;
@@ -125,29 +138,6 @@
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-    }
-
-    .preset-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
-      margin-bottom: 14px;
-    }
-
-    .preset-button {
-      min-height: 38px;
-      height: auto;
-      padding: 7px 8px;
-      background: #f8fafb;
-      font-size: 12px;
-      line-height: 1.2;
-    }
-
-    .preset-button:hover,
-    .preset-button.active {
-      border-color: var(--teal);
-      background: var(--teal-soft);
-      color: var(--teal);
     }
 
     label {
@@ -224,6 +214,153 @@
       line-height: 1.4;
     }
 
+    .layout-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 7px;
+    }
+
+    .layout-actions button {
+      width: 100%;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
+    dialog {
+      width: min(880px, calc(100% - 28px));
+      max-height: calc(100vh - 28px);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0;
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    dialog::backdrop { background: rgba(23, 33, 42, 0.55); }
+
+    .editor-body { padding: 18px; }
+
+    .editor-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .editor-header h2 { margin-bottom: 4px; }
+
+    .editor-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .editor-header button {
+      width: 36px;
+      flex: 0 0 36px;
+      font-size: 18px;
+    }
+
+    .editor-controls {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .editor-controls label { margin-top: 0; }
+
+    .grid-scroll {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      background: #dde3e6;
+    }
+
+    table.layout-grid {
+      width: 100%;
+      min-width: 700px;
+      table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 1px;
+    }
+
+    .layout-grid td {
+      height: 40px;
+      border: 0;
+      padding: 0;
+      background: #fff;
+    }
+
+    .layout-grid button {
+      width: 100%;
+      height: 40px;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      font-size: 11px;
+    }
+
+    .layout-grid .cell-floor { background: #f8fafb; }
+    .layout-grid [class*="cell-shelf"] { background: #23776d; color: #fff; }
+    .layout-grid [class*="cell-robot"] { background: #d88928; color: #17212a; }
+
+    .grid-help {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      color: #34424d;
+      font-weight: 600;
+    }
+
+    .checkbox-row input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--teal);
+    }
+
+    .checkbox-note {
+      margin: 5px 0 0 24px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .editor-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .editor-footer .message {
+      min-height: 0;
+      margin: 0;
+      border: 0;
+      padding: 0;
+    }
+
+    .editor-footer .button-row {
+      display: flex;
+      flex: 0 0 auto;
+      margin: 0;
+    }
+
+    .editor-footer button { padding: 0 16px; }
+
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(120px, 1fr));
@@ -271,6 +408,60 @@
       margin-top: 14px;
     }
 
+    .progress-row {
+      display: grid;
+      grid-template-columns: auto minmax(160px, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 13px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 4px;
+      background: #e4e9ec;
+      overflow: hidden;
+    }
+
+    .progress-track div {
+      width: 0;
+      height: 100%;
+      background: var(--teal);
+      transition: width 180ms ease;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .detail-block {
+      min-width: 0;
+      border-left: 3px solid #b9cac6;
+      padding-left: 10px;
+    }
+
+    .detail-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .detail-chip {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 5px 7px;
+      background: #f8fafb;
+      color: #34424d;
+      font-size: 11px;
+    }
+
     .bar-row {
       display: grid;
       grid-template-columns: 54px 1fr 38px;
@@ -311,6 +502,73 @@
     }
 
     .events-panel { margin-top: 14px; }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .panel-heading h2 { margin: 0; }
+
+    .event-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .event-tools select {
+      width: 150px;
+      height: 30px;
+      font-size: 11px;
+    }
+
+    .history-block {
+      margin-top: auto;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+      max-height: 245px;
+      overflow-y: auto;
+    }
+
+    .history-row {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding: 9px 2px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+    }
+
+    .history-row:hover { background: #f5f8f9; }
+
+    .history-row strong,
+    .history-row span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-row strong { font-size: 12px; }
+
+    .history-row span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
 
     .events {
       max-height: 340px;
@@ -353,6 +611,8 @@
 
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
+      .setup-panel { position: static; min-height: 0; }
+      .setup-body { min-height: 0; }
       .metrics-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       .metric:nth-child(4n) { border-right: 1px solid var(--line); }
       .metric:nth-child(2n) { border-right: 0; }
@@ -360,13 +620,16 @@
       .metric:nth-child(n + 7) { border-bottom: 0; }
       .utilization { grid-template-columns: 1fr; }
       .meta { grid-template-columns: 1fr; }
+      .detail-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
       header { align-items: flex-start; flex-direction: column; }
       main { padding: 9px; }
-      .preset-grid { grid-template-columns: 1fr; }
       .events { max-height: 390px; }
+      .editor-controls { grid-template-columns: 1fr; }
+      .editor-footer { align-items: stretch; flex-direction: column; }
+      .editor-footer .button-row { display: grid; }
       th:nth-child(1) { display: none; }
       td:nth-child(1) { display: none; }
     }
@@ -382,28 +645,21 @@
   </header>
 
   <main>
-    <section>
-      <div class="panel-body">
+    <section class="setup-panel">
+      <div class="panel-body setup-body">
         <h2>Experiment Setup</h2>
-        <h3>Presets</h3>
-        <div id="presetGrid" class="preset-grid">
-          <button class="preset-button" type="button" data-preset="quick">Quick check</button>
-          <button class="preset-button" type="button" data-preset="traffic">Three-robot traffic</button>
-          <button class="preset-button" type="button" data-preset="asymmetric">Asymmetric flow</button>
-          <button class="preset-button" type="button" data-preset="compact">Compact stress test</button>
-          <button class="preset-button" type="button" data-preset="crossing">Four-robot crossing</button>
-          <button class="preset-button" type="button" data-preset="baseline">FCFS baseline</button>
-        </div>
-
         <form id="experimentForm">
           <label for="layout">Warehouse layout</label>
           <select id="layout" name="layout"></select>
           <p id="layoutDescription" class="field-note"></p>
+          <div class="layout-actions">
+            <button id="openLayoutEditor" type="button">Create custom map</button>
+          </div>
 
           <label for="robot_count">Robot count</label>
           <select id="robot_count" name="robot_count"></select>
 
-          <label for="scheduler_policy">Scheduling policy</label>
+          <label for="scheduler_policy">Scheduler</label>
           <select id="scheduler_policy" name="scheduler_policy"></select>
 
           <label for="job_count">Jobs to generate</label>
@@ -412,12 +668,24 @@
           <label for="seed">Random seed</label>
           <input id="seed" name="seed" type="number" min="0" value="7">
 
+          <label class="checkbox-row" for="close_after_run">
+            <input id="close_after_run" name="close_after_run" type="checkbox" checked>
+            Close simulation after run
+          </label>
+          <p class="checkbox-note">Uncheck to keep Gazebo open until Stop is pressed.</p>
+
           <div class="button-row">
             <button id="startButton" class="primary" type="submit">Start run</button>
             <button id="stopButton" type="button" disabled>Stop</button>
           </div>
         </form>
         <div id="message" class="message">Ready to start an experiment.</div>
+        <div class="history-block">
+          <h2>Saved Runs</h2>
+          <div id="historyList" class="history-list">
+            <p class="field-note">No saved experiments yet.</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -425,6 +693,11 @@
       <section>
         <div class="panel-body">
           <h2>Run Metrics</h2>
+          <div class="progress-row">
+            <span>Job progress</span>
+            <div class="progress-track"><div id="jobProgressBar"></div></div>
+            <strong id="jobProgressText">0 / 0</strong>
+          </div>
           <div class="metrics-grid">
             <div class="metric"><span>Jobs queued</span><strong id="generated">0</strong></div>
             <div class="metric completed"><span>Completed</span><strong id="completed">0</strong></div>
@@ -436,16 +709,42 @@
             <div class="metric policy"><span>Scheduler</span><strong id="policy">-</strong></div>
           </div>
           <div id="utilization" class="utilization"></div>
+          <div class="detail-grid">
+            <div class="detail-block">
+              <h3>Robot Travel</h3>
+              <div id="robotDistance" class="detail-list">
+                <span class="detail-chip">No travel data</span>
+              </div>
+            </div>
+            <div class="detail-block">
+              <h3>Station Visits</h3>
+              <div id="stationVisits" class="detail-list">
+                <span class="detail-chip">No station data</span>
+              </div>
+            </div>
+          </div>
           <div class="meta">
             <div>Experiment ID: <span id="experimentId">-</span></div>
             <div>Results folder: <span id="resultDir">-</span></div>
+            <div>Layout: <span id="runLayout">-</span></div>
+            <div>Robots / seed: <span id="runConfig">-</span></div>
           </div>
         </div>
       </section>
 
       <section class="events-panel">
         <div class="panel-body events">
-          <h2>Recent Events</h2>
+          <div class="panel-heading">
+            <h2>Event Log</h2>
+            <div class="event-tools">
+              <span id="eventCount">0 events</span>
+              <select id="eventFilter" aria-label="Filter event log">
+                <option value="all">All events</option>
+                <option value="jobs">Job events</option>
+                <option value="failures">Failures only</option>
+              </select>
+            </div>
+          </div>
           <table>
             <thead>
               <tr><th>Time</th><th>Event</th><th>Robot</th><th>Route</th><th>Detail</th></tr>
@@ -459,25 +758,71 @@
     </div>
   </main>
 
-  <script>
-    const PRESETS = {
-      quick: { layout: 'standard', robot_count: 2, scheduler_policy: 'sjf_aging', job_count: 4, seed: 7 },
-      traffic: { layout: 'wide_aisle', robot_count: 3, scheduler_policy: 'nearest_robot', job_count: 10, seed: 12 },
-      asymmetric: { layout: 'asymmetric', robot_count: 3, scheduler_policy: 'sjf_aging', job_count: 8, seed: 21 },
-      compact: { layout: 'compact', robot_count: 4, scheduler_policy: 'sjf_aging', job_count: 12, seed: 18 },
-      crossing: { layout: 'cross_traffic', robot_count: 4, scheduler_policy: 'nearest_robot', job_count: 12, seed: 31 },
-      baseline: { layout: 'standard', robot_count: 2, scheduler_policy: 'fcfs', job_count: 6, seed: 7 }
-    };
+  <dialog id="layoutDialog">
+    <div class="editor-body">
+      <div class="editor-header">
+        <div>
+          <h2>Custom Warehouse Layout</h2>
+          <p>Place shelves and robot spawns. Click the same item again to rotate it.</p>
+        </div>
+        <button id="closeLayoutEditor" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="editor-controls">
+        <div>
+          <label for="customLayoutName">Layout name</label>
+          <input id="customLayoutName" maxlength="40" placeholder="Example: North Wing Test">
+        </div>
+        <div>
+          <label for="gridTool">Grid tool</label>
+          <select id="gridTool">
+            <option value="floor">Open floor</option>
+            <option value="shelf">Shelf / station</option>
+            <option value="robot1">Robot 1 spawn</option>
+            <option value="robot2">Robot 2 spawn</option>
+            <option value="robot3">Robot 3 spawn</option>
+            <option value="robot4">Robot 4 spawn</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-scroll">
+        <table id="layoutGrid" class="layout-grid" aria-label="Warehouse layout grid">
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="grid-help">
+        <span>Shelf arrows point toward the checkpoint.</span>
+        <span>Robot arrows show the starting heading.</span>
+      </div>
+      <div class="editor-footer">
+        <div id="layoutMessage" class="message">Add at least two shelves and Robot 1.</div>
+        <div class="button-row">
+          <button id="resetLayoutGrid" type="button">Reset example</button>
+          <button id="saveCustomLayout" class="primary" type="button">Save layout</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
 
+  <script>
     const form = document.getElementById('experimentForm');
     const statusPill = document.getElementById('statusPill');
     const message = document.getElementById('message');
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
+    const layoutDialog = document.getElementById('layoutDialog');
+    const layoutGridBody = document.querySelector('#layoutGrid tbody');
+    const layoutMessage = document.getElementById('layoutMessage');
+    const GRID_ROWS = 8;
+    const GRID_COLS = 14;
+    const DIRECTIONS = ['north', 'east', 'south', 'west'];
+    const DIRECTION_ARROWS = { north: 'N', east: 'E', south: 'S', west: 'W' };
     let layouts = [];
+    let layoutGrid = [];
     let schedulerNames = {};
     let currentExperimentId = localStorage.getItem('currentExperimentId') || null;
     let pollTimer = null;
+    let lastHistoryStatus = '';
+    let latestEvents = [];
 
     function setOptions(select, items, valueKey, labelKey, selected) {
       select.innerHTML = '';
@@ -504,38 +849,36 @@
     function updateLayoutDescription() {
       const layout = layouts.find((item) => item.name === form.layout.value);
       document.getElementById('layoutDescription').textContent = layout ? layout.description : '';
+      updateRobotCountOptions(layout);
     }
 
-    function clearActivePreset() {
-      document.querySelectorAll('.preset-button').forEach((button) => {
-        button.classList.remove('active');
-      });
+    function updateRobotCountOptions(layout) {
+      const current = Number(form.robot_count.value || 1);
+      const maxRobots = layout ? Object.keys(layout.initial_poses || {}).length : 4;
+      const counts = Array.from({ length: maxRobots }, (_, index) => index + 1);
+      setOptions(form.robot_count, counts, null, null, Math.min(current, maxRobots));
     }
 
-    function applyPreset(name) {
-      const preset = PRESETS[name];
-      if (!preset) return;
-      Object.entries(preset).forEach(([key, value]) => {
-        if (form.elements[key]) form.elements[key].value = value;
-      });
-      clearActivePreset();
-      document.querySelector(`[data-preset="${name}"]`).classList.add('active');
-      updateLayoutDescription();
-      message.textContent = `${document.querySelector(`[data-preset="${name}"]`).textContent} preset loaded.`;
-    }
-
-    async function loadConfig() {
+    async function loadConfig(selectedLayout = null) {
       const response = await fetch('/api/config');
       if (!response.ok) throw new Error('Could not load experiment options.');
       const config = await response.json();
       layouts = config.layouts;
       schedulerNames = Object.fromEntries(config.schedulers.map((item) => [item.id, item.name]));
-      setOptions(form.layout, layouts, 'name', 'display_name', config.defaults.layout);
+      setOptions(
+        form.layout,
+        layouts,
+        'name',
+        'display_name',
+        selectedLayout || config.defaults.layout
+      );
       setOptions(form.robot_count, config.robot_counts, null, null, config.defaults.robot_count);
       setOptions(form.scheduler_policy, config.schedulers, 'id', 'name', config.defaults.scheduler_policy);
       form.job_count.value = config.defaults.job_count;
       form.seed.value = config.defaults.seed;
+      form.close_after_run.checked = config.defaults.close_after_run;
       updateLayoutDescription();
+      await loadHistory();
 
       if (config.active_experiment_id) {
         currentExperimentId = config.active_experiment_id;
@@ -544,13 +887,141 @@
       }
     }
 
+    function exampleGrid() {
+      const grid = Array.from({ length: GRID_ROWS }, () =>
+        Array(GRID_COLS).fill('floor')
+      );
+      [[1, 3], [1, 7], [1, 11]].forEach(([row, col]) => {
+        grid[row][col] = 'shelf_south';
+      });
+      [[6, 3], [6, 7], [6, 11]].forEach(([row, col]) => {
+        grid[row][col] = 'shelf_north';
+      });
+      grid[3][0] = 'robot1_east';
+      grid[4][0] = 'robot2_east';
+      grid[3][1] = 'robot3_east';
+      grid[4][1] = 'robot4_east';
+      return grid;
+    }
+
+    function cellDirection(cell) {
+      const direction = cell.split('_').at(-1);
+      return DIRECTIONS.includes(direction) ? direction : null;
+    }
+
+    function rotateCell(cell, base, defaultDirection) {
+      if (!cell.startsWith(base)) return `${base}_${defaultDirection}`;
+      const direction = cellDirection(cell) || defaultDirection;
+      const next = DIRECTIONS[(DIRECTIONS.indexOf(direction) + 1) % DIRECTIONS.length];
+      return `${base}_${next}`;
+    }
+
+    function cellLabel(cell) {
+      const direction = cellDirection(cell);
+      const arrow = direction ? DIRECTION_ARROWS[direction] : '';
+      if (cell.startsWith('shelf')) return `S ${arrow}`;
+      if (cell.startsWith('robot')) return `R${cell.match(/robot([1-4])/)[1]} ${arrow}`;
+      return '';
+    }
+
+    function renderLayoutGrid() {
+      layoutGridBody.innerHTML = layoutGrid.map((row, rowIndex) =>
+        `<tr>${row.map((cell, colIndex) =>
+          `<td><button type="button" class="cell-${cell}" data-row="${rowIndex}" data-col="${colIndex}" aria-label="Row ${rowIndex + 1}, column ${colIndex + 1}: ${cell}">${cellLabel(cell)}</button></td>`
+        ).join('')}</tr>`
+      ).join('');
+    }
+
+    function resetLayoutGrid() {
+      layoutGrid = exampleGrid();
+      renderLayoutGrid();
+      layoutMessage.textContent = 'Example loaded. Change any shelf or spawn cell.';
+    }
+
+    layoutGridBody.addEventListener('click', (event) => {
+      const cellButton = event.target.closest('[data-row]');
+      if (!cellButton) return;
+      const row = Number(cellButton.dataset.row);
+      const col = Number(cellButton.dataset.col);
+      const tool = document.getElementById('gridTool').value;
+      const currentCell = layoutGrid[row][col];
+      if (tool === 'floor') {
+        layoutGrid[row][col] = 'floor';
+      } else if (tool === 'shelf') {
+        layoutGrid[row][col] = rotateCell(currentCell, 'shelf', 'north');
+      } else if (tool.startsWith('robot')) {
+        const rotatedCell = rotateCell(currentCell, tool, 'east');
+        layoutGrid.forEach((gridRow) => {
+          gridRow.forEach((cell, index) => {
+            if (cell.startsWith(tool)) gridRow[index] = 'floor';
+          });
+        });
+        layoutGrid[row][col] = rotatedCell;
+      }
+      renderLayoutGrid();
+    });
+
+    document.getElementById('openLayoutEditor').addEventListener('click', () => {
+      resetLayoutGrid();
+      document.getElementById('customLayoutName').value = '';
+      layoutDialog.showModal();
+    });
+
+    document.getElementById('closeLayoutEditor').addEventListener('click', () => {
+      layoutDialog.close();
+    });
+
+    document.getElementById('resetLayoutGrid').addEventListener('click', resetLayoutGrid);
+
+    document.getElementById('saveCustomLayout').addEventListener('click', async () => {
+      const saveButton = document.getElementById('saveCustomLayout');
+      saveButton.disabled = true;
+      layoutMessage.textContent = 'Generating layout files...';
+      const response = await fetch('/api/layouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          display_name: document.getElementById('customLayoutName').value,
+          grid: layoutGrid
+        })
+      });
+      const result = await response.json();
+      saveButton.disabled = false;
+      if (!response.ok) {
+        layoutMessage.textContent = result.error || 'Could not save layout.';
+        return;
+      }
+      await loadConfig(result.name);
+      form.layout.value = result.name;
+      updateLayoutDescription();
+      message.textContent = `${result.display_name} is ready to run.`;
+      layoutDialog.close();
+    });
+
+    async function loadHistory() {
+      const response = await fetch('/api/experiments?limit=8');
+      if (!response.ok) return;
+      const data = await response.json();
+      const historyList = document.getElementById('historyList');
+      if (!data.experiments.length) {
+        historyList.innerHTML = '<p class="field-note">No saved experiments yet.</p>';
+        return;
+      }
+      historyList.innerHTML = data.experiments.map((experiment) => {
+        const date = new Date(experiment.created_at * 1000).toLocaleString();
+        const results = `${experiment.jobs_completed} completed, ${experiment.jobs_failed} failed`;
+        return `<button class="history-row" type="button" data-experiment-id="${experiment.id}"><strong>${date} | ${prettyText(experiment.layout)}</strong><span>${experiment.robot_count} robots | ${prettyText(experiment.scheduler_policy)} | ${results}</span></button>`;
+      }).join('');
+    }
+
     function readForm() {
       return {
         layout: form.layout.value,
         robot_count: Number(form.robot_count.value),
         scheduler_policy: form.scheduler_policy.value,
         job_count: Number(form.job_count.value),
-        seed: Number(form.seed.value)
+        seed: Number(form.seed.value),
+        close_after_run: form.close_after_run.checked
       };
     }
 
@@ -561,6 +1032,14 @@
       message.textContent = experiment.message || '';
       document.getElementById('experimentId').textContent = experiment.id || '-';
       document.getElementById('resultDir').textContent = experiment.result_dir || '-';
+      const config = experiment.config || {};
+      const layout = layouts.find((item) => item.name === config.layout);
+      document.getElementById('runLayout').textContent = layout
+        ? layout.display_name
+        : prettyText(config.layout) || '-';
+      document.getElementById('runConfig').textContent = config.robot_count
+        ? `${config.robot_count} robots / seed ${config.seed}`
+        : '-';
 
       const running = ['starting', 'running', 'reviewing', 'stopping'].includes(status);
       startButton.disabled = running;
@@ -572,10 +1051,17 @@
         clearInterval(pollTimer);
         pollTimer = null;
       }
+      if (!running && lastHistoryStatus !== `${experiment.id}:${status}`) {
+        lastHistoryStatus = `${experiment.id}:${status}`;
+        loadHistory();
+      }
     }
 
     function updateMetrics(summary, config) {
       const metrics = summary || {};
+      const generated = Number(metrics.jobs_generated || 0);
+      const finished = Number(metrics.jobs_completed || 0) + Number(metrics.jobs_failed || 0);
+      const percent = generated ? Math.min(100, Math.round((finished / generated) * 100)) : 0;
       document.getElementById('generated').textContent = metrics.jobs_generated || 0;
       document.getElementById('completed').textContent = metrics.jobs_completed || 0;
       document.getElementById('failed').textContent = metrics.jobs_failed || 0;
@@ -585,16 +1071,51 @@
       document.getElementById('throughput').textContent = Number(metrics.throughput_jobs_per_min || 0).toFixed(2);
       const policyId = config ? config.scheduler_policy : '';
       document.getElementById('policy').textContent = schedulerNames[policyId] || '-';
+      document.getElementById('jobProgressBar').style.width = `${percent}%`;
+      document.getElementById('jobProgressText').textContent = `${finished} / ${generated}`;
 
       const utilization = metrics.robot_utilization || {};
       document.getElementById('utilization').innerHTML = Object.keys(utilization).map((robot) => {
         const percent = Math.round(Number(utilization[robot] || 0) * 100);
         return `<div class="bar-row"><span>${robot}</span><div class="bar"><div style="width:${percent}%"></div></div><span>${percent}%</span></div>`;
       }).join('');
+
+      const distances = metrics.fleet_metrics?.robot_distance_m || {};
+      document.getElementById('robotDistance').innerHTML = metricChips(
+        distances,
+        (value) => `${Number(value).toFixed(1)} m`,
+        'No travel data'
+      );
+      const visits = metrics.station_occupancy?.station_visits || {};
+      document.getElementById('stationVisits').innerHTML = metricChips(
+        visits,
+        (value) => `${value} visits`,
+        'No station data'
+      );
+    }
+
+    function metricChips(values, formatValue, emptyText) {
+      const entries = Object.entries(values);
+      if (!entries.length) return `<span class="detail-chip">${emptyText}</span>`;
+      return entries.map(([name, value]) =>
+        `<span class="detail-chip"><strong>${name}</strong> ${formatValue(value)}</span>`
+      ).join('');
     }
 
     function updateEvents(events) {
+      latestEvents = events;
+      renderEvents();
+    }
+
+    function renderEvents() {
       const body = document.getElementById('eventsBody');
+      const filter = document.getElementById('eventFilter').value;
+      const events = latestEvents.filter((event) => {
+        if (filter === 'failures') return (event.event || '').includes('failed');
+        if (filter === 'jobs') return (event.event || '').startsWith('job_');
+        return true;
+      });
+      document.getElementById('eventCount').textContent = `${events.length} events`;
       if (!events.length) {
         body.innerHTML = '<tr><td colspan="5">No events yet.</td></tr>';
         return;
@@ -622,15 +1143,25 @@
       if (!pollTimer) pollTimer = setInterval(pollExperiment, 1000);
     }
 
-    document.getElementById('presetGrid').addEventListener('click', (event) => {
-      const button = event.target.closest('[data-preset]');
-      if (button) applyPreset(button.dataset.preset);
+    document.getElementById('historyList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-experiment-id]');
+      if (!button) return;
+      currentExperimentId = button.dataset.experimentId;
+      localStorage.setItem('currentExperimentId', currentExperimentId);
+      const response = await fetch(`/api/experiments/${currentExperimentId}`);
+      if (!response.ok) return;
+      const experiment = await response.json();
+      updateStatus(experiment);
+      if (['starting', 'running', 'reviewing', 'stopping'].includes(experiment.status)) {
+        startPolling();
+      }
     });
 
     form.addEventListener('change', (event) => {
       if (event.target.name === 'layout') updateLayoutDescription();
-      clearActivePreset();
     });
+
+    document.getElementById('eventFilter').addEventListener('change', renderEvents);
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();

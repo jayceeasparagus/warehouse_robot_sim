@@ -14,6 +14,7 @@ import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from std_msgs.msg import String
 
 from warehouse_robot_sim.layout_config import initial_poses, load_layout, station_poses
 
@@ -115,6 +116,8 @@ class MultiRobotDispatcherNode(Node):
         if self.results_dir:
             self.results_dir.mkdir(parents=True, exist_ok=True)
             self.events_path.write_text('', encoding='utf-8')
+
+        self.event_publisher = self.create_publisher(String, '/warehouse/events', 50)
 
         self.robots: List[RobotWorker] = [
             RobotWorker(name, ActionClient(self, NavigateToPose, f'/{name}/navigate_to_pose'))
@@ -451,14 +454,19 @@ class MultiRobotDispatcherNode(Node):
         robot.goal_handle = None
 
     def record_event(self, event_type: str, job=None, **details):
-        if not self.events_path:
-            return
         event = {'event': event_type, 'sim_time_sec': round(self.now_sec(), 3)}
         if job:
             event.update({'job_id': job.job_id, 'route': job.route})
         event.update(details)
-        with self.events_path.open('a', encoding='utf-8') as event_file:
-            event_file.write(json.dumps(event) + '\n')
+        event_json = json.dumps(event)
+
+        message = String()
+        message.data = event_json
+        self.event_publisher.publish(message)
+
+        if self.events_path:
+            with self.events_path.open('a', encoding='utf-8') as event_file:
+                event_file.write(event_json + '\n')
 
     def write_results(self, status: str):
         if self.results_written or not self.results_dir:
